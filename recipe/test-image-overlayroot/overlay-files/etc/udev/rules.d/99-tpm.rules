@@ -1,0 +1,2 @@
+KERNEL=="tpm[0-9]*", MODE="0666", OWNER="ec2-user", GROUP="tss"
+KERNEL=="tpmrm[0-9]*", MODE="0666", OWNER="ec2-user", GROUP="tss"

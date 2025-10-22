@@ -1,0 +1,16 @@
+#!/bin/bash
+
+libdir=${LIBDIR_OVERRIDE:-/usr/share/amazon-ec2-net-utils}
+
+. "${libdir}/lib.sh"
+
+if [ -s 
+
+hostname=$(get_imds local-hostname)
+
+if [ -n "$hostname" ];then
+   info "Setting hostname to ${hostname} retrieved from IMDS"
+   hostnamectl hostname ${hostname}
+else
+   error "Unable to set hostname"
+fi

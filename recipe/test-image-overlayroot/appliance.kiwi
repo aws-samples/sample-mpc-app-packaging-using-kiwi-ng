@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OBS-Profiles: @BUILD_FLAVOR@ -->
+<image schemaversion="7.5" name="al2023-attestable-image-mpc-webapp-example">
+    <description type="system">
+        <author>Sudhir Reddy</author>
+        <contact>maddulap@amazon.com</contact>
+        <specification>AL2023 Attestable Image MPC WebApp Example</specification>
+    </description>
+    <preferences>
+        <version>1.0.0</version>
+        <packagemanager>dnf</packagemanager>
+        <locale>en_US</locale>
+        <keytable>us</keytable>
+        <timezone>UTC</timezone>
+        <rpm-excludedocs>true</rpm-excludedocs>
+        <rpm-check-signatures>true</rpm-check-signatures>
+    </preferences>
+    <!-- ZOA: Set systemd.getty_auto=true to enable serial console access -->
+    <preferences>
+        <type
+            image="oem"
+            filesystem="xfs"
+            kernelcmdline="console=ttyS0 rd.shell=0 systemd.getty_auto=false rd.kiwi.verity_options=panic-on-corruption"
+            firmware="uefi"
+            overlayroot="true"
+            overlayroot_write_partition="false"
+            overlayroot_readonly_filesystem="erofs"
+            overlayroot_readonly_partsize="20480"
+            erofscompression="lz4hc,level=12"
+            eficsm="false"
+            verity_blocks="all"
+            bootpartition="false"
+            efipartsize="200"
+            editbootinstall="edit_boot_install.sh"
+        >
+            <oemconfig>
+                <oem-resize>false</oem-resize>
+            </oemconfig>
+            <bootloader name="systemd_boot" timeout="10"/>
+            <initrd action="setup">
+                <dracut uefi="true"/>
+            </initrd>
+            <size unit="G">40</size>
+        </type>
+    </preferences>
+
+    <repository priority="2" package_gpgcheck="true" sourcetype="mirrorlist" customize="add-gpg-key.sh">
+            <source path="https://cdn.amazonlinux.com/al2023/core/mirrors/latest/$basearch/mirror.list"/>
+    </repository>
+
+    <!-- NVIDIA CUDA repository for Amazon Linux 2023 -->
+    <repository priority="3" repository_gpgcheck="false" sourcetype="baseurl">
+            <source path="https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/"/>
+    </repository>
+
+    <!-- NodeSource repository for Node.js -->
+    <repository priority="4" repository_gpgcheck="false" sourcetype="baseurl">
+            <source path="https://rpm.nodesource.com/pub_18.x/el/9/x86_64/"/>
+    </repository>
+
+    <packages type="image">
+        <!-- Remove operator access by not installing these packages -->
+        <ignore name="openssh-server"/>
+        <ignore name="amazon-ssm-agent"/>
+        <ignore name="cloud-init"/>
+        <ignore name="cloud-init-cfg-ec2"/>
+        <ignore name="update-motd" />
+        <ignore name="ec2-instance-connect"/>
+        <archive name="overlay.tar.gz"/>
+        <!-- Use ami-minimal-kernel6.12 for kernel6.12 images -->
+        <namedCollection name="core"/>
+        <namedCollection name="ami-minimal"/>
+        <!-- core package -->
+        <package name="pciutils"/>
+        <package name="gzip"/>
+        <package name="kernel"/>
+        <package name="kernel-modules-extra"/>
+        <package name="awscli"/>
+        <package name="tar"/>
+        <package name="veritysetup"/>
+        <package name="sssd-common"/>
+        <package name="sssd-kcm"/>
+        <package name="systemd-boot"/>        
+        <package name="tar"/>
+        <package name="awscli"/>
+        <package name="zram-generator"/>
+        <package name="zram-generator-defaults"/>
+        <package name="cryptsetup"/>
+        <package name="dracut-kiwi-verity"/>
+        <package name="dracut-kiwi-overlay"/>
+        <package name="aws-nitro-tpm-tools"/>
+        <package name="systemd-resolved"/>
+        <package name="amazon-chrony-config"/>
+        <package name="binutils"/>
+        <package name="lvm2"/>
+        <package name="initscripts"/>
+        <package name="tpm2-tools"/>
+        <package name="firewalld"/>
+        <package name="python3-pip"/>
+        <package name="nodejs"/>
+        <package name="npm"/>
+        <!-- ollama will be installed via script to get CUDA support -->
+        <!-- NVIDIA packages following AWS AL2023 guide -->
+        <package name="nvidia-release"/>
+        <package name="nvidia-driver"/>
+        <package name="nvidia-driver-libs"/>
+        <package name="nvidia-driver-NVML"/>
+        <package name="nvidia-modprobe"/>
+        <package name="nvidia-open"/>
+        <package name="cuda-runtime-12-9"/>
+        <package name="cuda-toolkit"/>
+
+        <!-- Don't install these packages -->
+        <ignore name="ec2-hibinit-agent"/>
+        <ignore name="grubby"/>
+        <ignore name="grub2-pc-modules"/>
+        <ignore name="grub2-tools"/>
+        <ignore name="grub2-efi-aa64-ec2"/>
+        <ignore name="grub2-efi-aa64"/>
+        <ignore name="grub2-efi-aa64-modules"/>
+        <ignore name="grub2-efi-x64-ec2"/>
+        <ignore name="grub2-efi-x64"/>
+        <ignore name="grub2-efi-x64-modules"/>
+        <ignore name="amazon-linux-repo-s3"/>
+        <ignore name="amazon-linux-repo-cdn"/>
+    </packages>
+    <packages type="bootstrap">
+        <package name="system-release"/>
+        <package name="dnf"/>
+        <!-- Ignoring these packages forces the use of the minimal versions -->
+        <ignore name="libcurl"/>
+        <ignore name="curl"/>
+        <ignore name="gnupg2"/>
+    </packages>
+</image>
