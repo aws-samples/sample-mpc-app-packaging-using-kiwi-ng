@@ -1,0 +1,4 @@
+KERNEL=="nvidia", RUN+="/bin/chmod 0666 /dev/nvidia*"
+KERNEL=="nvidia_modeset", RUN+="/bin/chmod 0666 /dev/nvidia*"
+KERNEL=="nvidia_uvm", RUN+="/bin/chmod 0666 /dev/nvidia*"
+KERNEL=="nvidiactl", RUN+="/bin/chmod 0666 /dev/nvidiactl"

@@ -1,0 +1,28 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::<MODEL_PUBLISHING_S3_BUCKET_NAME>",
+        "arn:aws:s3:::<MODEL_PUBLISHING_S3_BUCKET_NAME>/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "kms:GetKeyPolicy",
+        "kms:PutKeyPolicy",
+        "kms:CreateKey",
+        "kms:DescribeKey"
+      ],
+      "Resource": "arn:aws:kms:<AWS_REGION>:<AWS_ACCOUNT_ID>:key/<KMS_KEY_ID>"
+    }
+  ]
+}

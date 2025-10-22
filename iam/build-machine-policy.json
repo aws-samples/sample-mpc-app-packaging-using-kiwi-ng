@@ -1,0 +1,18 @@
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "imagesnapshot",
+			"Effect": "Allow",
+			"Action": [
+				"ec2:CreateSnapshot",
+				"ec2:CreateImage",
+				"ec2:RegisterImage",
+				"ebs:StartSnapshot",
+				"ebs:PutSnapshotBlock",
+				"ebs:CompleteSnapshot"
+			],
+			"Resource": "*"
+		}
+	]
+}
