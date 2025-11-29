@@ -1,4 +1,4 @@
-# Kiwi-ng Recipe to package the sample app into a ZOA TEE Image.
+# Kiwi-ng Recipe to package the sample app into a ZOA Attestable Amazon Machine Image (AMI).
 appliance.kiwi, config.sh and overaly-files specific to Nvidia and TPM device configuraiton are core files to review.
 
 

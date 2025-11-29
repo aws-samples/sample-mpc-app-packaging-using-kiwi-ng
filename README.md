@@ -4,7 +4,7 @@
 
 ## Summary
 
-This application demonstrates how to take the [secure multi-party collaboration application](https://github.com/aws-samples/sample-mpc-app-using-aws-nitrotpm/) and package it as a Zero Operator Access (ZOA) AWS NitroTPM based attested TEE Image. For more information refer to [this repo](https://github.com/aws-samples/sample-mpc-app-using-aws-nitrotpm/), for details about how the sample app provides capabilities to publish and consume fine-tuned domain-specific LLM models or AI/ML models by leveraging a **Trusted Execution Environment (TEE) built on AWS using AWS NitroTPM and Amazon EC2 instance attestation with access to GPU to accelerate computation**. It enables two entities to collaborate securely: Party-A (model owner) can securely publish models for customers without risk of model exfiltration, while Party-B (model consumer) can consume models without exposing sensitive input data.
+This application demonstrates how to take the [secure multi-party collaboration application](https://github.com/aws-samples/sample-mpc-app-using-aws-nitrotpm/) and package it as a Zero Operator Access (ZOA) Attestable Amazon Machine Image (AMI). For more information refer to [this repo](https://github.com/aws-samples/sample-mpc-app-using-aws-nitrotpm/), for details about how the sample app provides capabilities to publish and consume fine-tuned domain-specific LLM models or AI/ML models using AWS NitroTPM and Amazon EC2 instance attestation with access to GPU to accelerate computation. It enables two entities to collaborate securely: Party-A (model owner) can securely publish models for customers without risk of model exfiltration, while Party-B (model consumer) can consume models without exposing sensitive input data.
 
 In this repo we will focus on how to build, package the sample app using a combination of tools [Kiwi-ng](https://osinside.github.io/kiwi/), [aws-nitro-tpm-tools](https://github.com/aws/NitroTPM-Tools/), [dm-verity](https://docs.kernel.org/admin-guide/device-mapper/verity.html), [erofs](https://docs.kernel.org/filesystems/erofs.html), [coldsnap](https://github.com/awslabs/coldsnap) to standup an isolated execution envrionment with no interactive access like [SSH](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect-to-linux-instance.html), [AWS Systems Manager Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html), [EC2 Instance Connect](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/connect-linux-inst-eic.html), [EC2 Serial Console](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-serial-console.html). Further the output of executing the scripts in this repo will be an [Amazon Machine Image (AMI)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html). The packaging steps in this repo builds on top of an [existing sample](https://github.com/amazonlinux/kiwi-image-descriptions-examples) with additional steps to overlay the [sample application](https://github.com/aws-samples/sample-mpc-app-using-aws-nitrotpm/).
 
@@ -43,17 +43,17 @@ cat /mnt/image/pcr_measurements.json
 ```
 
 
-### Creating a TPM-TEE from the Attestable AMI.
+### Creating an EC2 instance attestation from the Attestable AMI.
 
 This section details the bare minimum services, components needed to test out the sample App. Note that is is not a best practice recommendation. We will use AWS CLI commands to create the necessary AWS services, there is a AWS CDK sample project also available in this repo that will help create this and much more.
 
 #### IAM Policy
 
-This sample app needs an IAM role that gives the TPM-TEE permissions to 
+This sample app needs an IAM role that gives the isolated compute environment permissions to 
 1. Download the encrypted artifacts from Amazon S3 bucket
 2. Decrypt the datakey using AWS KMS key decrypt action.
 
-This example also runs few additional functionality which you would not run out of a TEE typically and for those the following additional IAM permissions are also needed.
+This example also runs few additional functionality (which you would not typically run from the same consumer instance) and for those the following additional IAM permissions are also needed.
 1. Mutate the KMS key policy with various PCR choices as conditions to demonstrate conditional sealing/unsealing.
 2. Delete Loaded models from the S3 bucket.
 
@@ -65,44 +65,44 @@ Next we need to attach the policies to an IAM role. Create the IAM role and poli
 
 # Create IAM role
 aws iam create-role \
-  --role-name TPM-TEE-Role \
+  --role-name instance-Role \
   --assume-role-policy-document file://iam/trust-policy.json
 
 # Create and attach policy
 aws iam create-policy \
-  --policy-name TPM-TEE-Policy \
-  --policy-document file://iam/tpm-tee-policy.json
+  --policy-name instance-Policy \
+  --policy-document file://iam/instance-policy.json
 
 
 aws iam attach-role-policy \
-  --role-name TPM-TEE-Role \
-  --policy-arn arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/TPM-TEE-Policy
+  --role-name instance-Role \
+  --policy-arn arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/instance-Policy
 
 
 # Create instance profile
-aws iam create-instance-profile --instance-profile-name TPM-TEE-InstanceProfile
+aws iam create-instance-profile --instance-profile-name ec2-InstanceProfile
 aws iam add-role-to-instance-profile \
-  --instance-profile-name TPM-TEE-InstanceProfile \
-  --role-name TPM-TEE-Role
+  --instance-profile-name ec2-InstanceProfile \
+  --role-name instance-Role
 ```
 
 Note:
-In addition to the IAM permissions attached to the TEE, there would be other guardrails necessary depending on the usecase and threat model. Some are noted here as examples.
+In addition to the IAM permissions attached to the EC2 instance, there would be other guardrails necessary depending on the usecase and threat model. Some are noted here as examples.
 
-1. Scoping down the KMS decrypt to this TEEs measurements would be done by the Model Owner using KMS Key policy PCR conditions.
-2. Scoping down the S3 bucket access and specific operations that TEE is allowed to perform would be done by the Model consumer.
+1. Scoping down the KMS decrypt to this EC2 instance measurements would be done by the Model Owner using KMS Key policy PCR conditions.
+2. Scoping down the S3 bucket access and specific operations that EC2 instance is allowed to perform would be done by the Model consumer.
 
 
 ### Create Security group
 
-The sample app running in the TPM-TEE needs port 3000 opened to your public IP for testing. The Kiwi-ng recipe config.sh already [handles](recipe/test-image-overlayroot/config.sh#L133) letting traffic into port 3000 of the TEE. This security group rule further lets the port 3000 available out of the security group. Use the below CLI commands, replace the cidr with your public IP/32 CIDR.
+The sample app running in the EC2 needs port 3000 opened to your public IP for testing. The Kiwi-ng recipe config.sh already [handles](recipe/test-image-overlayroot/config.sh#L133) letting traffic into port 3000 of the instance. This security group rule further lets the port 3000 available out of the security group. Use the below CLI commands, replace the cidr with your public IP/32 CIDR.
 
 ```sh
 
 # Create the security group (replace VPC-ID with actual VPC ID from the describe command)
 aws ec2 create-security-group \
-  --group-name TPM-TEE-SecurityGroup \
-  --description "Security group for TPM-TEE instances" \
+  --group-name ec2-instance-SecurityGroup \
+  --description "Security group for EC2 instances" \
   --vpc-id vpc-xxxxxxxx \
   --region <aws-region>
 
